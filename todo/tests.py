@@ -77,3 +77,26 @@ class TodoViewTestCase(TestCase):
         self.assertEqual(response.templates[0].name, 'todo/index.html')
         self.assertEqual(response.context['tasks'][0], task2)
         self.assertEqual(response.context['tasks'][1], task1)
+
+    def test_index_get_order_due(self):
+        task1 = Task(title='task1', due_at=timezone.make_aware(datetime(2024, 8, 1)))
+        task1.save()
+        task2 = Task(title='task2', due_at=timezone.make_aware(datetime(2024, 7, 1)))
+        task2.save()
+        client = Client()
+        response = client.get('/?order=due')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['tasks'][0], task2) # 締め切りが早いtask2が先
+        self.assertEqual(response.context['tasks'][1], task1)
+    
+    def test_index_post(self):
+        client = Client()
+        data = {'title': 'TestTask', 'due_at': '2024-06-30 23:59:59'}
+        response = client.post('/', data)
+
+        self.assertEqual(response.status_code, 200)
+        # データベースに1件登録されているか確認
+        self.assertEqual(Task.objects.count(), 1)
+        saved_task = Task.objects.first()
+        self.assertEqual(saved_task.title, 'TestTask')
