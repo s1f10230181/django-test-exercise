@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.utils import timezone
 from datetime import datetime
 from .models import Task
@@ -52,3 +52,14 @@ class TaskModelTestCase(TestCase):
         current = timezone.make_aware(datetime(2024, 7, 1, 0, 0, 0))
         task = Task.objects.create(title='future_task', due_at=due)
         self.assertFalse(task.is_overdue(current))
+
+
+class TaskModelTestCase(TestCase):
+    def test_index_get(self):
+        client = Client()
+        data = {'title': 'TestTask', 'due_at': '2024-06-30 23:59:59'}
+        response = client.get('/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.templates[0].name, 'todo/index.html')
+        self.assertEqual(len(response.context['tasks']), 0)
